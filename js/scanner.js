@@ -12,16 +12,18 @@ const BarcodeScanner = {
     this.scanner = new Html5Qrcode(containerId);
 
     const config = {
-      fps: 10,
-      qrbox: { width: 260, height: 150 },
+      fps: 20, // Increased FPS for faster scanning
+      qrbox: { width: 300, height: 150 }, // Wider box for 1D barcodes
+      aspectRatio: 1.0,
       formatsToSupport: [
         Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
         Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.QR_CODE
-      ]
+        Html5QrcodeSupportedFormats.UPC_A
+      ],
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
     };
 
     try {
