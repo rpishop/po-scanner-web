@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="PO Scanner — Scan barcodes, verify purchase orders, generate reports">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PO Scanner</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════════════════════════════════ -->
+  <!--  HOME VIEW                          -->
+  <!-- ════════════════════════════════════ -->
+  <div id="view-home" class="view active">
+    <div class="toolbar">
+      <h1>📦 PO Scanner<br><span class="subtitle">Purchase Order Verification</span></h1>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display:none">
+      <div class="icon">📦</div>
+      <h3>No Purchase Orders</h3>
+      <p>Tap the + button to upload an Excel PO file and start scanning</p>
+    </div>
+
+    <div id="poList"></div>
+
+    <button class="fab" id="fabUpload" title="Upload Excel">+</button>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  PO DETAIL VIEW                     -->
+  <!-- ════════════════════════════════════ -->
+  <div id="view-detail" class="view">
+    <div class="toolbar">
+      <button class="btn-back" onclick="App.showView('home');App.loadHomeList()">←</button>
+      <h1 id="detailTitle">PO Details<br><span class="subtitle" id="detailPoNumber"></span></h1>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-complete">
+        <div class="stat-value" id="detailComplete">0</div>
+        <div class="stat-label">Complete</div>
+      </div>
+      <div class="stat-card stat-short">
+        <div class="stat-value" id="detailShort">0</div>
+        <div class="stat-label">Short</div>
+      </div>
+      <div class="stat-card stat-pending">
+        <div class="stat-value" id="detailPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-primary" id="btnStartScan" onclick="App.openScanner()">📷 Start Scanning</button>
+      <button class="btn-secondary" onclick="App.openSummary()">📊 Summary</button>
+    </div>
+
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="detailSearch" placeholder="Search ASIN or title...">
+    </div>
+
+    <div id="detailProductList"></div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  SCANNER VIEW                       -->
+  <!-- ════════════════════════════════════ -->
+  <div id="view-scanner" class="view">
+    <div class="toolbar" style="position:absolute;z-index:10;width:100%;background:rgba(0,0,0,0.5)">
+      <button class="btn-back" onclick="App.closeScanner()">←</button>
+      <h1>Scanner</h1>
+      <span id="scanProgress" style="font-size:0.85rem;font-weight:600">0 / 0</span>
+    </div>
+
+    <div class="scanner-container">
+      <div id="scannerVideo"></div>
+    </div>
+
+    <div style="padding:12px 0">
+      <div id="scanResultCard" class="scan-result-card" style="display:none"></div>
+    </div>
+
+    <div class="scanner-bottom">
+      <div class="scanner-controls">
+        <button class="btn-secondary" onclick="App.showManualEntry()">⌨️ Manual Entry</button>
+        <button class="btn-primary" style="max-width:160px" onclick="App.closeScanner()">✅ Finish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  SUMMARY VIEW                       -->
+  <!-- ════════════════════════════════════ -->
+  <div id="view-summary" class="view">
+    <div class="toolbar">
+      <button class="btn-back" onclick="App.openDetail(App.currentPoId)">←</button>
+      <h1 id="summaryTitle">Summary<br><span class="subtitle" id="summaryPoNumber"></span></h1>
+    </div>
+
+    <div class="circular-progress">
+      <svg width="140" height="140" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#6366f1"/>
+            <stop offset="100%" style="stop-color:#22d3ee"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="60" cy="60" r="54"/>
+        <circle class="fill" id="progressCircle" cx="60" cy="60" r="54"
+          stroke-dasharray="339.29" stroke-dashoffset="339.29"/>
+      </svg>
+      <div class="value">
+        <span class="percent" id="summaryPercent">0%</span>
+        <span class="label" id="summaryLabel">0 of 0 complete</span>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-complete">
+        <div class="stat-value" id="summaryComplete">0</div>
+        <div class="stat-label">Complete</div>
+      </div>
+      <div class="stat-card stat-short">
+        <div class="stat-value" id="summaryShort">0</div>
+        <div class="stat-label">Short</div>
+      </div>
+      <div class="stat-card stat-pending">
+        <div class="stat-value" id="summaryPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+
+    <div class="qty-row">
+      <div class="qty-item">
+        <div class="qty-value" id="summaryExpectedQty">0</div>
+        <div class="qty-label">Expected Qty</div>
+      </div>
+      <div class="qty-item">
+        <div class="qty-value" id="summaryScannedQty">0</div>
+        <div class="qty-label">Scanned Qty</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-primary" onclick="App.downloadPdf()">📄 Download PDF</button>
+      <button class="btn-secondary" onclick="App.downloadExcel()">📊 Download Excel</button>
+    </div>
+
+    <div style="padding:8px 20px;font-size:0.85rem;font-weight:600;color:var(--text-secondary)">All Products</div>
+    <div id="summaryProductList"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!--  UPLOAD MODAL                       -->
+<!-- ════════════════════════════════════ -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <h3>📦 Import Purchase Order</h3>
+    <input type="text" class="modal-input" id="inputPoNumber" placeholder="PO Number (e.g. PO-2024-001)">
+    <input type="file" class="modal-input" id="inputFile" accept=".xlsx,.xls" style="padding:10px">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="App.closeUploadModal()">Cancel</button>
+      <button class="btn-primary" onclick="App.handleUpload()">📥 Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="color:var(--text-secondary)">Importing Excel...</div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!--  LIBRARIES (CDN)                    -->
+<!-- ════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/dexie@3.2.7/dist/dexie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<!-- APP -->
+<script src="js/db.js"></script>
+<script src="js/excel-reader.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/pdf-generator.js"></script>
+<script src="js/excel-generator.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
