@@ -1,4 +1,4 @@
-const CACHE_NAME = 'po-scanner-v3';
+const CACHE_NAME = 'po-scanner-v4';
 const ASSETS = [
   './',
   './index.html',
