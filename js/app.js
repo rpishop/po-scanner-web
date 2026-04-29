@@ -381,6 +381,68 @@ const App = {
     } catch (e) {
       this.toast('❌ Excel error: ' + e.message);
     }
+  },
+
+  // ════════════════════════════════════════
+  //  SYNC / MERGE
+  // ════════════════════════════════════════
+  async exportProgress() {
+    if (!this.currentPoId) return;
+    const po = await DB.getPO(this.currentPoId);
+    const products = await DB.getProductsByPO(this.currentPoId);
+    
+    // Only export items with scans to keep file small
+    const data = products
+      .filter(p => p.scannedQty > 0)
+      .map(p => ({ asin: p.asin, scannedQty: p.scannedQty }));
+
+    if (data.length === 0) {
+      this.toast('⚠️ No progress to share yet!');
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PO_${po.poNumber}_Progress_${new Date().getTime()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toast('📤 Progress file exported!');
+  },
+
+  async importProgress() {
+    if (!this.currentPoId) return;
+    
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const remoteData = JSON.parse(event.target.result);
+          if (!Array.isArray(remoteData)) throw new Error('Invalid format');
+
+          document.getElementById('loadingOverlay').classList.add('active');
+          await DB.mergeProductData(this.currentPoId, remoteData);
+          document.getElementById('loadingOverlay').classList.remove('active');
+          
+          this.toast('📥 Progress merged successfully!');
+          this.openDetail(this.currentPoId); // Refresh view
+        } catch (err) {
+          document.getElementById('loadingOverlay').classList.remove('active');
+          this.toast('❌ Failed to merge: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   }
 };
 

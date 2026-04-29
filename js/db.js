@@ -138,5 +138,21 @@ const DB = {
   async hasActiveSession(poId) {
     const s = await db.sessions.where({ poId: Number(poId), isActive: 1 }).first();
     return !!s;
+  },
+
+  // ─── Sync / Merge ──────────────────────
+  async mergeProductData(poId, remoteData) {
+    const id = Number(poId);
+    const localProducts = await db.products.where('poId').equals(id).toArray();
+    
+    for (const remoteItem of remoteData) {
+      const local = localProducts.find(p => p.asin === remoteItem.asin);
+      if (local) {
+        // Merge strategy: Sum the quantities, but cap at expectedQty
+        const newQty = Math.min(local.expectedQty, local.scannedQty + remoteItem.scannedQty);
+        await db.products.update(local.id, { scannedQty: newQty });
+      }
+    }
+    await this.updatePOProgress(id);
   }
 };
