@@ -183,10 +183,31 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════ -->
+<!--  MANUAL ENTRY MODAL                 -->
+<!-- ════════════════════════════════════ -->
+<div class="modal-overlay" id="manualEntryModal">
+  <div class="modal">
+    <h3 id="manualEntryTitle">Manual Entry</h3>
+    <div style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-secondary)" id="manualEntryAsin"></div>
+    
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+      <button class="btn-secondary" style="padding: 10px; flex: 1" onclick="App.adjustManualQty('reset')">⭕ Reset</button>
+      <input type="number" id="manualQtyInput" class="modal-input" style="margin-bottom: 0; text-align: center; font-size: 1.5rem; font-weight: 800; flex: 2" placeholder="0">
+      <button class="btn-secondary" style="padding: 10px; flex: 1" onclick="App.adjustManualQty('full')">✅ Full</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="App.closeManualEntry()">Cancel</button>
+      <button class="btn-primary" onclick="App.saveManualEntry()">Update Qty</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <div style="color:var(--text-secondary)">Importing Excel...</div>
+  <div style="color:var(--text-secondary)" id="loadingText">Processing...</div>
 </div>
 
 <!-- ════════════════════════════════════ -->

@@ -195,16 +195,80 @@ const App = {
       const label = status === 'complete' ? 'Complete' : status === 'short' ? 'Short' : 'Pending';
       const item = document.createElement('div');
       item.className = 'product-item';
+      item.onclick = () => this.showManualEntry(p.id); // Click to edit!
       item.innerHTML = `
         <div class="product-info">
           <div class="product-asin">${p.asin}</div>
           <div class="product-title">${p.title}</div>
-          <div class="product-qty">${p.scannedQty} / ${p.expectedQty}</div>
+          <div class="product-qty">
+            <span style="font-weight:700; color:var(--text-primary)">${p.scannedQty}</span> / ${p.expectedQty}
+          </div>
         </div>
         <span class="chip ${chipClass}">${label}</span>
       `;
       el.appendChild(item);
     });
+  },
+
+  // ════════════════════════════════════════
+  //  MANUAL ENTRY
+  // ════════════════════════════════════════
+  async showManualEntry(productId) {
+    const product = await DB.db.products.get(Number(productId));
+    if (!product) {
+      // If called from scanner with ASIN instead of ID
+      const results = await DB.db.products.where('asin').equals(productId).toArray();
+      if (results.length > 0) this._editingProduct = results[0];
+      else return;
+    } else {
+      this._editingProduct = product;
+    }
+
+    const p = this._editingProduct;
+    document.getElementById('manualEntryTitle').textContent = 'Edit Quantity';
+    document.getElementById('manualEntryAsin').textContent = p.asin;
+    document.getElementById('manualQtyInput').value = p.scannedQty;
+    document.getElementById('manualEntryModal').classList.add('active');
+    
+    // Auto-select input for quick typing
+    setTimeout(() => {
+      const input = document.getElementById('manualQtyInput');
+      input.focus();
+      input.select();
+    }, 100);
+  },
+
+  adjustManualQty(action) {
+    const input = document.getElementById('manualQtyInput');
+    if (action === 'reset') input.value = 0;
+    if (action === 'full') input.value = this._editingProduct.expectedQty;
+  },
+
+  async saveManualEntry() {
+    const newQty = parseInt(document.getElementById('manualQtyInput').value) || 0;
+    const product = this._editingProduct;
+    
+    // Cap at expected
+    const finalQty = Math.min(product.expectedQty, Math.max(0, newQty));
+    
+    await DB.db.products.update(product.id, { scannedQty: finalQty });
+    await DB.updatePOProgress(product.poId);
+    
+    this.closeManualEntry();
+    this.toast('✅ Quantity updated');
+    
+    // Refresh current view
+    if (this.currentView === 'detail') this.openDetail(product.poId);
+    if (this.currentView === 'summary') this.openSummary();
+    if (this.currentView === 'scanner' && typeof Scanner !== 'undefined') {
+        // Just refresh the result card if in scanner
+        const updated = await DB.db.products.get(product.id);
+        if (typeof this.updateScannerStatus === 'function') this.updateScannerStatus(updated);
+    }
+  },
+
+  closeManualEntry() {
+    document.getElementById('manualEntryModal').classList.remove('active');
   },
 
   // ════════════════════════════════════════
