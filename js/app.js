@@ -162,7 +162,7 @@ const App = {
 
     setText('detailTitle', po.fileName);
     setText('detailPoNumber', `PO# ${po.poNumber}`);
-    setText('detailComplete', stats.complete);
+    setText('detailMatched', stats.complete);
     setText('detailShort', stats.short);
     setText('detailPending', stats.pending);
     
@@ -170,6 +170,7 @@ const App = {
     if (btnScan) btnScan.textContent = hasSession ? '▶️ Resume Scanning' : '📷 Start Scanning';
 
     this._statusFilter = null; // Reset filter on new PO
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active')); // Clear UI highlights
     this.renderProductList(products, 'detailProductList');
     
     const searchInput = document.getElementById('detailSearch');
@@ -226,7 +227,8 @@ const App = {
       const label = status === 'complete' ? 'Complete' : status === 'short' ? 'Short' : 'Pending';
       const item = document.createElement('div');
       item.className = 'product-item';
-      item.onclick = () => this.showManualEntry(p.id); // Click to edit!
+      // Use touchstart for faster response on mobile
+      item.addEventListener('click', () => this.showManualEntry(p.id));
       item.innerHTML = `
         <div class="product-info">
           <div class="product-asin">${p.asin}</div>
