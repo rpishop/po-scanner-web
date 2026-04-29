@@ -384,23 +384,34 @@ const App = {
     card.innerHTML = `
       <div class="product-asin">${product.asin}</div>
       <div class="product-title">${product.title}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
-        <div class="qty-adjuster">
-          <button class="btn-icon" onclick="App.adjustQty(-1)">−</button>
-          <span class="qty-display">${product.scannedQty} / ${product.expectedQty}</span>
-          <button class="btn-icon" onclick="App.adjustQty(1)">+</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:8px">
+        <div style="display:flex;align-items:center;gap:4px;flex:1">
+           <button class="btn-secondary" style="padding:6px 8px;font-size:0.75rem" onclick="App.adjustScannerQty('reset')">⭕ Reset</button>
+           <input type="number" id="scannerQtyInput" value="${product.scannedQty}" 
+                  style="width:50px; text-align:center; font-weight:800; border-radius:8px; border:1px solid var(--border-glass); background:rgba(255,255,255,0.05); color:white; padding:6px 0"
+                  onchange="App.adjustScannerQty('manual')">
+           <span style="font-size:0.8rem;color:var(--text-secondary)">/ ${product.expectedQty}</span>
+           <button class="btn-secondary" style="padding:6px 8px;font-size:0.75rem" onclick="App.adjustScannerQty('full')">✅ Full</button>
         </div>
         <span class="chip ${chipClass}">${label}</span>
       </div>
     `;
+    this.lastScannedProduct = product;
   },
 
-  async adjustQty(delta) {
+  async adjustScannerQty(action) {
     if (!this.lastScannedProduct) return;
-    const current = await DB.getProduct(this.lastScannedProduct.id);
-    if (!current) return;
-    const newQty = current.scannedQty + delta;
-    const updated = await DB.setQty(current.id, newQty);
+    const input = document.getElementById('scannerQtyInput');
+    const product = this.lastScannedProduct;
+    let newQty = product.scannedQty;
+
+    if (action === 'reset') newQty = 0;
+    else if (action === 'full') newQty = product.expectedQty;
+    else if (action === 'manual') newQty = parseInt(input.value) || 0;
+
+    const finalQty = Math.min(product.expectedQty, Math.max(0, newQty));
+    const updated = await DB.setQty(product.id, finalQty);
+    
     this.lastScannedProduct = updated;
     this.showScanResult(updated);
     await DB.updatePOProgress(this.currentPoId);
