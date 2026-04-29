@@ -169,20 +169,51 @@ const App = {
     const btnScan = document.getElementById('btnStartScan');
     if (btnScan) btnScan.textContent = hasSession ? '▶️ Resume Scanning' : '📷 Start Scanning';
 
+    this._statusFilter = null; // Reset filter on new PO
     this.renderProductList(products, 'detailProductList');
-    this._detailProducts = products;
-
+    
     const searchInput = document.getElementById('detailSearch');
     if (searchInput) {
       searchInput.value = '';
       searchInput.oninput = (e) => {
-        const q = e.target.value.toLowerCase();
-        const filtered = q ? this._detailProducts.filter(p =>
-          p.asin.toLowerCase().includes(q) || p.title.toLowerCase().includes(q)
-        ) : this._detailProducts;
-        this.renderProductList(filtered, 'detailProductList');
+        this.applyFilters(e.target.value);
       };
     }
+    this._detailProducts = products;
+  },
+
+  setStatusFilter(status) {
+    // Toggle logic: if same status clicked, clear filter
+    if (this._statusFilter === status) {
+      this._statusFilter = null;
+    } else {
+      this._statusFilter = status;
+    }
+
+    // Update UI active state
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    if (this._statusFilter) {
+      const idMap = { 'complete': 'statCardMatched', 'short': 'statCardShort', 'pending': 'statCardPending' };
+      document.getElementById(idMap[status])?.classList.add('active');
+    }
+
+    const q = document.getElementById('detailSearch')?.value || '';
+    this.applyFilters(q);
+  },
+
+  applyFilters(query) {
+    const q = query.toLowerCase();
+    const filtered = this._detailProducts.filter(p => {
+      // 1. Text filter
+      const matchesSearch = p.asin.toLowerCase().includes(q) || p.title.toLowerCase().includes(q);
+      
+      // 2. Status filter
+      if (!this._statusFilter) return matchesSearch;
+      const status = DB.getProductStatus(p);
+      return matchesSearch && status === this._statusFilter;
+    });
+
+    this.renderProductList(filtered, 'detailProductList');
   },
 
   renderProductList(products, containerId) {
