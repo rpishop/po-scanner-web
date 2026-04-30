@@ -386,12 +386,14 @@ const App = {
       <div class="product-title">${product.title}</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:8px">
         <div style="display:flex;align-items:center;gap:4px;flex:1">
-           <button class="btn-secondary" style="padding:6px 8px;font-size:0.75rem" onclick="App.adjustScannerQty('reset')">⭕ Reset</button>
+           <button class="btn-secondary" style="padding:6px 6px;font-size:0.7rem;min-width:32px" onclick="App.adjustScannerQty('minus')">−</button>
+           <button class="btn-secondary" style="padding:6px 6px;font-size:0.7rem" onclick="App.adjustScannerQty('reset')">⭕</button>
            <input type="number" id="scannerQtyInput" value="${product.scannedQty}" 
-                  style="width:50px; text-align:center; font-weight:800; border-radius:8px; border:1px solid var(--border-glass); background:rgba(255,255,255,0.05); color:white; padding:6px 0"
+                  style="width:45px; text-align:center; font-weight:800; border-radius:8px; border:1px solid var(--border-glass); background:rgba(255,255,255,0.05); color:white; padding:6px 0"
                   onchange="App.adjustScannerQty('manual')">
-           <span style="font-size:0.8rem;color:var(--text-secondary)">/ ${product.expectedQty}</span>
-           <button class="btn-secondary" style="padding:6px 8px;font-size:0.75rem" onclick="App.adjustScannerQty('full')">✅ Full</button>
+           <span style="font-size:0.75rem;color:var(--text-secondary)">/ ${product.expectedQty}</span>
+           <button class="btn-secondary" style="padding:6px 6px;font-size:0.7rem" onclick="App.adjustScannerQty('full')">✅</button>
+           <button class="btn-secondary" style="padding:6px 6px;font-size:0.7rem;min-width:32px" onclick="App.adjustScannerQty('plus')">+</button>
         </div>
         <span class="chip ${chipClass}">${label}</span>
       </div>
@@ -407,6 +409,8 @@ const App = {
 
     if (action === 'reset') newQty = 0;
     else if (action === 'full') newQty = product.expectedQty;
+    else if (action === 'plus') newQty = product.scannedQty + 1;
+    else if (action === 'minus') newQty = product.scannedQty - 1;
     else if (action === 'manual') newQty = parseInt(input.value) || 0;
 
     const finalQty = Math.min(product.expectedQty, Math.max(0, newQty));
